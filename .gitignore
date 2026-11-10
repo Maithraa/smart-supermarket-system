@@ -1,0 +1,18 @@
+# Node
+node_modules/
+dist/
+.vite-temp/
+package-lock.json
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.env
+uploads/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
