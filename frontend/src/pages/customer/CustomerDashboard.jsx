@@ -171,16 +171,84 @@ export default function CustomerDashboard() {
     setVerifyResult(null);
     try {
       const [billRes, verifyRes] = await Promise.all([
-        axios.get(`${API_BASE}/bills/${billToFetch}`),
-        axios.post(`${API_BASE}/bills/${billToFetch}/verify`)
+        axios.get(`${API_BASE}/bills/${billToFetch}`, { timeout: 3000 }),
+        axios.post(`${API_BASE}/bills/${billToFetch}/verify`, {}, { timeout: 3000 })
       ]);
       setBillData(billRes.data);
       setVerifyResult(verifyRes.data);
       loadCustomerData();
     } catch (err) {
-      setVerifyResult({
-        error: err.response?.data?.error || `Bill '${billToFetch}' could not be loaded.`
-      });
+      // Demo fallback when running on static hosts like GitHub Pages
+      if (billToFetch.toUpperCase() === 'B1025') {
+        const demoB1025 = {
+          bill_no: 'B1025',
+          customer_name: 'Customer 01',
+          cashier: 'Priya',
+          counter: 2,
+          total_amount: 295.00,
+          matched: false,
+          mismatches: [
+            { product: 'Dove Soap', expected: 2, received: 0, discrepancy_type: "Wrong Product: Expected 'Dove Soap', got 'Lux Soap'" },
+            { product: 'Lux Soap', expected: 0, received: 2, discrepancy_type: "Wrong Product: Expected 'Dove Soap', got 'Lux Soap'" }
+          ],
+          bill_items: [
+            { product_name: 'Dove Soap', quantity: 2, unit_price: 55.00, total_price: 110.00 },
+            { product_name: "Kellogg's Corn Flakes", quantity: 1, unit_price: 185.00, total_price: 185.00 }
+          ],
+          received_items: [
+            { product_name: 'Lux Soap', quantity: 2 },
+            { product_name: "Kellogg's Corn Flakes", quantity: 1 }
+          ]
+        };
+        setBillData(demoB1025);
+        setVerifyResult(demoB1025);
+      } else if (billToFetch.toUpperCase() === 'B1026') {
+        const demoB1026 = {
+          bill_no: 'B1026',
+          customer_name: 'Arun Kumar',
+          cashier: 'Rahul',
+          counter: 1,
+          total_amount: 578.00,
+          matched: false,
+          mismatches: [
+            { product: 'Amul Butter 500g', expected: 2, received: 1, discrepancy_type: 'Quantity Mismatch (Shortage of 1 unit)' }
+          ],
+          bill_items: [
+            { product_name: 'Amul Butter 500g', quantity: 2, unit_price: 275.00, total_price: 550.00 },
+            { product_name: 'Tata Salt 1kg', quantity: 1, unit_price: 28.00, total_price: 28.00 }
+          ],
+          received_items: [
+            { product_name: 'Amul Butter 500g', quantity: 1 },
+            { product_name: 'Tata Salt 1kg', quantity: 1 }
+          ]
+        };
+        setBillData(demoB1026);
+        setVerifyResult(demoB1026);
+      } else if (billToFetch.toUpperCase() === 'B1027') {
+        const demoB1027 = {
+          bill_no: 'B1027',
+          customer_name: 'Customer 01',
+          cashier: 'Priya',
+          counter: 2,
+          total_amount: 345.00,
+          matched: true,
+          mismatches: [],
+          bill_items: [
+            { product_name: 'Tropicana Orange Juice 1L', quantity: 2, unit_price: 120.00, total_price: 240.00 },
+            { product_name: 'Britannia Good Day Cookies', quantity: 3, unit_price: 35.00, total_price: 105.00 }
+          ],
+          received_items: [
+            { product_name: 'Tropicana Orange Juice 1L', quantity: 2 },
+            { product_name: 'Britannia Good Day Cookies', quantity: 3 }
+          ]
+        };
+        setBillData(demoB1027);
+        setVerifyResult(demoB1027);
+      } else {
+        setVerifyResult({
+          error: `Bill '${billToFetch}' not found in supermarket database.`
+        });
+      }
     } finally {
       setVerifyLoading(false);
     }

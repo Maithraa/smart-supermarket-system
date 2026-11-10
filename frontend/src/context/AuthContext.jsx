@@ -22,8 +22,10 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     setLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
-      const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
+      const res = await axios.post(`${API_BASE}/auth/login`, { email: cleanEmail, password }, { timeout: 3000 });
       const { token: jwtToken, user: userData, redirect } = res.data;
       setUser(userData);
       setToken(jwtToken);
@@ -31,6 +33,47 @@ export function AuthProvider({ children }) {
       localStorage.setItem('freshmart_user', JSON.stringify(userData));
       return { success: true, redirect, user: userData };
     } catch (err) {
+      // If backend is unreachable (e.g. on GitHub Pages static deployment or offline), activate smart demo fallback
+      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+        let role = 'Customer';
+        let redirect = '/customer/dashboard';
+        let name = 'Customer 01';
+        let counterNo = null;
+
+        if (cleanEmail.includes('admin')) {
+          role = 'Admin';
+          name = 'System Administrator';
+          redirect = '/admin/dashboard';
+        } else if (cleanEmail.includes('priya')) {
+          role = 'Cashier';
+          name = 'Priya Sharma';
+          counterNo = 2;
+          redirect = '/cashier/dashboard';
+        } else if (cleanEmail.includes('rahul')) {
+          role = 'Cashier';
+          name = 'Rahul Verma';
+          counterNo = 1;
+          redirect = '/cashier/dashboard';
+        }
+
+        const fallbackUser = {
+          id: Date.now(),
+          email: cleanEmail,
+          full_name: name,
+          role,
+          phone: '+91 98765 00000',
+          counter_no: counterNo,
+          is_demo_fallback: true
+        };
+        const fallbackToken = 'demo_jwt_token_' + Date.now();
+
+        setUser(fallbackUser);
+        setToken(fallbackToken);
+        localStorage.setItem('freshmart_token', fallbackToken);
+        localStorage.setItem('freshmart_user', JSON.stringify(fallbackUser));
+        return { success: true, redirect, user: fallbackUser };
+      }
+
       const message = err.response?.data?.error || 'Login failed. Please check your credentials.';
       return { success: false, error: message };
     } finally {
@@ -41,7 +84,7 @@ export function AuthProvider({ children }) {
   const signup = async (formData) => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE}/auth/signup`, formData);
+      const res = await axios.post(`${API_BASE}/auth/signup`, formData, { timeout: 3000 });
       const { token: jwtToken, user: userData, redirect } = res.data;
       setUser(userData);
       setToken(jwtToken);
@@ -49,6 +92,21 @@ export function AuthProvider({ children }) {
       localStorage.setItem('freshmart_user', JSON.stringify(userData));
       return { success: true, redirect, user: userData };
     } catch (err) {
+      if (!err.response || err.code === 'ERR_NETWORK') {
+        const fallbackUser = {
+          id: Date.now(),
+          email: formData.email,
+          full_name: formData.full_name,
+          role: 'Customer',
+          phone: formData.phone,
+          is_demo_fallback: true
+        };
+        setUser(fallbackUser);
+        setToken('demo_token');
+        localStorage.setItem('freshmart_token', 'demo_token');
+        localStorage.setItem('freshmart_user', JSON.stringify(fallbackUser));
+        return { success: true, redirect: '/customer/dashboard', user: fallbackUser };
+      }
       const message = err.response?.data?.error || 'Registration failed.';
       return { success: false, error: message };
     } finally {
